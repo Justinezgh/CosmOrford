@@ -19,6 +19,7 @@ class CompressorModel(L.LightningModule):
         decay_rate: float = 0.85,
         decay_every_epochs: int = 1,
         dropout_rate: float = 0.2,
+        lr_schedule: str = "cosine",
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -112,11 +113,26 @@ class CompressorModel(L.LightningModule):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.max_lr, weight_decay=1e-5)
         total_steps = int(self.trainer.estimated_stepping_batches)
         warmup_steps = self.hparams.warmup_steps
-        steps_per_epoch = total_steps // self.trainer.max_epochs
-        step_size = self.hparams.decay_every_epochs * steps_per_epoch
 
-        warmup = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-10, end_factor=1.0, total_iters=warmup_steps)
-        decay = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=self.hparams.decay_rate)
-        scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[warmup, decay], milestones=[warmup_steps])
+        warmup = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=1e-10, end_factor=1.0, total_iters=warmup_steps
+        )
 
-        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step", "frequency": 1}}
+        if self.hparams.lr_schedule == "cosine":
+            main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=total_steps - warmup_steps
+            )
+        else:  # "step"
+            steps_per_epoch = total_steps // self.trainer.max_epochs
+            step_size = self.hparams.decay_every_epochs * steps_per_epoch
+            main_scheduler = torch.optim.lr_scheduler.StepLR(
+                optimizer, step_size=step_size, gamma=self.hparams.decay_rate
+            )
+
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[warmup, main_scheduler], milestones=[warmup_steps]
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": scheduler, "interval": "step", "frequency": 1},
+        }

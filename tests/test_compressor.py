@@ -29,3 +29,15 @@ def test_compressor_training_step():
     loss = model.training_step((x, y), 0)
     assert loss.shape == ()
     assert loss.requires_grad
+
+
+def test_compressor_cosine_schedule():
+    from cosmorford.compressor import CompressorModel
+    model = CompressorModel(backbone="resnet18", lr_schedule="cosine")
+    assert model.hparams.lr_schedule == "cosine"
+
+
+def test_compressor_step_schedule():
+    from cosmorford.compressor import CompressorModel
+    model = CompressorModel(backbone="resnet18", lr_schedule="step")
+    assert model.hparams.lr_schedule == "step"
