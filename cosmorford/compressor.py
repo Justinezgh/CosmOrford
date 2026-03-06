@@ -9,6 +9,16 @@ from cosmorford.backbones import get_backbone, adapt_first_conv
 from cosmorford.dataset import reshape_field
 
 
+def mixup_data(x, y, alpha=0.2):
+    """Mixup augmentation for regression: interpolate both inputs and targets."""
+    lam = torch.distributions.Beta(alpha, alpha).sample().item() if alpha > 0 else 1.0
+    batch_size = x.size(0)
+    index = torch.randperm(batch_size, device=x.device)
+    x_mixed = lam * x + (1 - lam) * x[index]
+    y_mixed = lam * y + (1 - lam) * y[index]
+    return x_mixed, y_mixed
+
+
 class CompressorModel(L.LightningModule):
     def __init__(
         self,
@@ -20,6 +30,7 @@ class CompressorModel(L.LightningModule):
         decay_every_epochs: int = 1,
         dropout_rate: float = 0.2,
         lr_schedule: str = "cosine",
+        mixup_alpha: float = 0.0,
         use_sam: bool = False,
         sam_rho: float = 0.05,
     ):
@@ -88,6 +99,9 @@ class CompressorModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         x = self._augment(x)
+
+        if self.hparams.mixup_alpha > 0:
+            x, y = mixup_data(x, y, self.hparams.mixup_alpha)
 
         if self.hparams.use_sam:
             opt = self.optimizers()

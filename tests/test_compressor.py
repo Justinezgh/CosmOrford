@@ -41,3 +41,12 @@ def test_compressor_step_schedule():
     from cosmorford.compressor import CompressorModel
     model = CompressorModel(backbone="resnet18", lr_schedule="step")
     assert model.hparams.lr_schedule == "step"
+
+
+def test_mixup_augmentation():
+    from cosmorford.compressor import mixup_data
+    x = torch.randn(8, 1, 64, 64)
+    y = torch.randn(8, 2)
+    x_mixed, y_mixed = mixup_data(x, y, alpha=0.2)
+    assert x_mixed.shape == x.shape
+    assert y_mixed.shape == y.shape
