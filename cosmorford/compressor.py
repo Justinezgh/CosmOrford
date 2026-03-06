@@ -3,8 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
-from cosmorford import THETA_MEAN, THETA_STD, NOISE_STD
+import numpy as np
+from cosmorford import THETA_MEAN, THETA_STD, NOISE_STD, SURVEY_MASK
 from cosmorford.backbones import get_backbone
+from cosmorford.dataset import reshape_field
 
 
 class CompressorModel(L.LightningModule):
@@ -23,6 +25,9 @@ class CompressorModel(L.LightningModule):
 
         features, feat_dim = get_backbone(backbone)
         self.backbone = features
+
+        # Reshaped survey mask matching the field layout after reshape_field
+        self.mask = np.concatenate([SURVEY_MASK[:, :88], SURVEY_MASK[620:1030, 88:]])
 
         self.pool = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
@@ -58,9 +63,10 @@ class CompressorModel(L.LightningModule):
         return mean, scale
 
     def _augment(self, x):
-        """Apply augmentations: noise, random flips, cyclic shifts."""
+        """Apply augmentations: noise, survey mask, random flips, cyclic shifts."""
         noise = torch.randn_like(x) * NOISE_STD
         x = x + noise
+        x = x * torch.tensor(self.mask, device=x.device).unsqueeze(0)
 
         batch_size = x.size(0)
         # Random flips
@@ -88,6 +94,7 @@ class CompressorModel(L.LightningModule):
         x, y = batch
         noise = torch.randn_like(x) * NOISE_STD
         x = x + noise
+        x = x * torch.tensor(self.mask, device=x.device).unsqueeze(0)
 
         mean, std = self(x)
 

@@ -33,3 +33,6 @@ trainer = "cosmorford.trainer:trainer_cli"
 
 [tool.setuptools]
 packages = ["cosmorford"]
+
+[tool.setuptools.package-data]
+cosmorford = ["*.npy"]
