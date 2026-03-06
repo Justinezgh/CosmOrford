@@ -1,0 +1,43 @@
+import torch
+from lightning.pytorch.cli import ArgsType, LightningCLI
+from lightning import LightningModule, Trainer
+from lightning.pytorch.cli import SaveConfigCallback
+from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch.callbacks import WeightAveraging
+from torch.optim.swa_utils import get_ema_avg_fn
+
+torch.set_float32_matmul_precision('medium')
+
+
+class EMAWeightAveraging(WeightAveraging):
+    def __init__(self):
+        super().__init__(avg_fn=get_ema_avg_fn(decay=0.99))
+
+    def should_update(self, step_idx=None, epoch_idx=None):
+        # Start after 1000 steps.
+        return (step_idx is not None) and (step_idx >= 100)
+
+class CustomSaveConfigCallback(SaveConfigCallback):
+    """Saves full training configuration
+    Otherwise wandb won't log full configuration but only flattened module and data hyperparameters
+    """
+
+    def save_config(
+        self, trainer: Trainer, pl_module: LightningModule, stage: str
+    ) -> None:
+        for logger in trainer.loggers:
+            if issubclass(type(logger), WandbLogger):
+                logger.experiment.config.update(self.config.as_dict())
+        return super().save_config(trainer, pl_module, stage)
+
+def trainer_cli(args: ArgsType = None, run: bool = True):
+    return LightningCLI(
+        args=args,
+        run=run,
+        save_config_kwargs={"overwrite": True},
+        save_config_callback=CustomSaveConfigCallback,
+        parser_kwargs={"parser_mode": "omegaconf"},
+    )
+
+if __name__ == "__main__":
+    trainer_cli(run=True)
