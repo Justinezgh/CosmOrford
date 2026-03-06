@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosmorford"
+version = "0.1.0"
+description = "Neural network compression of weak lensing mass maps"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Francois Lanusse", email = "francois.lanusse@cnrs.fr"}
+]
+
+dependencies = [
+    "torch>=2.4",
+    "torchvision>=0.19",
+    "lightning>=2.4",
+    "datasets",
+    "numpy",
+    "wandb",
+    "omegaconf",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+modal = ["modal"]
+dev = ["pytest", "ipython", "ipykernel"]
+
+[project.scripts]
+trainer = "cosmorford.trainer:trainer_cli"
+
+[tool.setuptools]
+packages = ["cosmorford"]
