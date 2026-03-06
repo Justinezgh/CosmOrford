@@ -31,11 +31,17 @@ class CompressorModel(L.LightningModule):
         dropout_rate: float = 0.2,
         lr_schedule: str = "cosine",
         mixup_alpha: float = 0.0,
+        random_erasing: bool = False,
         use_sam: bool = False,
         sam_rho: float = 0.05,
     ):
         super().__init__()
         self.save_hyperparameters()
+        if random_erasing:
+            from torchvision.transforms import RandomErasing
+            self.random_eraser = RandomErasing(p=0.25, scale=(0.02, 0.15), value=0)
+        else:
+            self.random_eraser = None
         if use_sam:
             self.automatic_optimization = False
 
@@ -94,6 +100,11 @@ class CompressorModel(L.LightningModule):
         x = torch.stack([torch.roll(x[i], shifts=(shift_x[i].item(),), dims=(0,)) for i in range(batch_size)])
         shift_y = torch.randint(0, x.size(2), (batch_size,), device=x.device)
         x = torch.stack([torch.roll(x[i], shifts=(shift_y[i].item(),), dims=(1,)) for i in range(batch_size)])
+
+        if self.random_eraser is not None:
+            x = x.unsqueeze(1)  # [B, 1, H, W] — RandomErasing expects image-like tensors
+            x = torch.stack([self.random_eraser(x[i]) for i in range(x.size(0))])
+            x = x.squeeze(1)  # back to [B, H, W]
         return x
 
     def training_step(self, batch, batch_idx):
