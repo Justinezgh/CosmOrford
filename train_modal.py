@@ -42,15 +42,41 @@ CHECKPOINTS_PATH = VOLUME_PATH / "checkpoints"
 )
 def train(config_path: str, experiment_name: Optional[str] = None):
     import subprocess
+    import yaml
 
     checkpoint_dir = CHECKPOINTS_PATH / (experiment_name or "default")
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     last_ckpt = checkpoint_dir / "last.ckpt"
 
+    # Write a runtime overlay config that sets checkpoint dir on the volume
+    overlay = {
+        "trainer": {
+            "default_root_dir": str(checkpoint_dir),
+            "callbacks": [
+                {
+                    "class_path": "LearningRateMonitor",
+                    "init_args": {"logging_interval": "step"},
+                },
+                {
+                    "class_path": "ModelCheckpoint",
+                    "init_args": {
+                        "dirpath": str(checkpoint_dir),
+                        "monitor": "val_loss",
+                        "mode": "min",
+                        "save_top_k": 3,
+                        "save_last": True,
+                    },
+                },
+            ],
+        }
+    }
+    overlay_path = Path("/tmp/runtime_config.yaml")
+    overlay_path.write_text(yaml.dump(overlay))
+
     cmd = [
         "trainer", "fit",
         f"--config=/root/{config_path}",
-        f"--trainer.default_root_dir={checkpoint_dir}",
+        f"--config={overlay_path}",
     ]
 
     if last_ckpt.exists():
