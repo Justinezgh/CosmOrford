@@ -34,7 +34,7 @@ class RegressionModelNoPatch(L.LightningModule):
   def __init__(self, backbone="efficientnet_b0", summary_dim: int = 8,
                warmup_steps: int = 1000, max_lr: float = 0.256,
                decay_rate: float = 0.97, decay_every_epochs: int = 2, dropout_rate: float = 0.2,
-               freeze_backbone: bool = False,
+               loss_type: str = "log_prob", freeze_backbone: bool = False,
                use_flow: bool = False, flow_transforms: int = 4, flow_hidden_dim: int = 64,
                pretrained_checkpoint_path: str = None,
                use_peft: bool = False, lora_r: int = 8, lora_alpha: int = 16,
@@ -115,6 +115,7 @@ class RegressionModelNoPatch(L.LightningModule):
       'decay_every_epochs': decay_every_epochs,
       'dropout_rate': dropout_rate,
       'summary_dim': summary_dim,
+      'loss_type': loss_type,
       'freeze_backbone': freeze_backbone,
       'use_flow': use_flow,
       'flow_transforms': flow_transforms,
@@ -272,8 +273,15 @@ class RegressionModelNoPatch(L.LightningModule):
 
     if self.hparams.use_flow:
       loss = -self.flow.log_prob(y, context=summaries).mean()
-    else:
+    elif self.hparams.loss_type == "log_prob":
       loss = -torch.distributions.Normal(loc=mean, scale=std).log_prob(y).mean()
+    elif self.hparams.loss_type == "score":
+      mean = mean * torch.tensor(THETA_STD[:2], device=mean.device) + torch.tensor(THETA_MEAN[:2], device=mean.device)
+      std = std * torch.tensor(THETA_STD[:2], device=std.device)
+      y = y[:, :2] * torch.tensor(THETA_STD[:2], device=y.device) + torch.tensor(THETA_MEAN[:2], device=y.device)
+      sq_error = (y - mean) ** 2
+      score = -torch.sum(sq_error / std**2 + torch.log(std**2) + 1000.0 * sq_error, dim=1)
+      loss = -torch.mean(score)
     self.log('train_loss', loss)
     return loss
 
