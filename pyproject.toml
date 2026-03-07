@@ -39,7 +39,8 @@ dependencies = [
     "POT",
     "omegaconf",
     "wandb",
-    "peft"
+    "peft",
+    "nflows"
 ]
 
 [project.optional-dependencies]
