@@ -1,9 +1,12 @@
 model:
   class_path: cosmoford.models.RegressionModel
   init_args:
-    backbone: "efficientnet_v2_m"
+    use_cnn: false
+    use_scattering: true
+    scattering_J: 3
+    scattering_L: 8
     warmup_steps: 500
-    max_lr: 0.008
+    max_lr: 0.002
     decay_rate: 0.85
     decay_every_epochs: 1
     dropout_rate: 0.2
@@ -12,9 +15,8 @@ model:
 data:
   class_path: cosmoford.dataset.ChallengeDataModule
   init_args:
-    batch_size: 128 
+    batch_size: 256
     num_workers: 12
-    # train_on_full_data: true
 
 trainer:
   max_epochs: 30
@@ -36,7 +38,7 @@ trainer:
   logger:
     class_path: WandbLogger
     init_args:
-      name: "efficientnet_v2_m"
-      project: "neurips-wl-challenge-whatworks"
+      name: "ps_scattering_J3"
+      project: "neurips-wl-challenge"
       entity: "cosmostat"
       log_model: true
