@@ -104,6 +104,8 @@ class ChallengeDataModule(L.LightningDataModule):
         dset = load_dataset("cosmostat/neurips-wl-challenge-flat")
         dset = dset.with_format("torch")
 
+
+        shared_dir = "~/links/projects/rrg-lplevass/shared/wl_chall_data"
         # Determine which dataset to use for training
         # Legacy: train_on_full_data overrides dataset_mode if True
         if self.train_on_full_data:
@@ -122,7 +124,8 @@ class ChallengeDataModule(L.LightningDataModule):
         elif self.dataset_mode == "gowerstreet-train":
             # Load gowerstreet pretraining dataset
             print("Loading Gower Street pretraining dataset...")
-            dset_gowerstreet = Dataset.load_from_disk("gs://neurips-wl/datasets/gowerstreet_patches")
+            # Setting the directory to be the shared folder, might want to specify the string in the config instead. 
+            dset_gowerstreet = Dataset.load_from_disk(shared_dir + "/gowerstreet-train")
             dset_gowerstreet = dset_gowerstreet.shuffle(seed=42)
             dset_gowerstreet = dset_gowerstreet.with_format("torch")
 
@@ -135,14 +138,14 @@ class ChallengeDataModule(L.LightningDataModule):
 
         elif self.dataset_mode == "lognormal":
             # Load lognormal pretraining dataset
-            dset_lognormal = Dataset.load_from_disk("gs://neurips-wl/datasets/lognormal")
+            dset_lognormal = Dataset.load_from_disk(shared_dir + "/lognormal")
             dset_lognormal = dset_lognormal.shuffle(seed=42)
             dset_lognormal = dset_lognormal.with_format("torch")
             self.train_dataset = dset_lognormal
             self.val_dataset = dset['validation']
         elif self.dataset_mode == "ot_emulated":
             # Load lognormal pretraining dataset
-            dset_ot = Dataset.load_from_disk("gs://neurips-wl/datasets/ot_emulated")
+            dset_ot = Dataset.load_from_disk(shared_dir + "/ot_emulated")
             dset_ot = dset_ot.rename_column('maps', 'kappa')
             dset_ot = dset_ot.shuffle(seed=42)
             dset_ot = dset_ot.with_format("torch")
