@@ -12,7 +12,7 @@ model:
 data:
   class_path: cosmorford.dataset.WLDataModule
   init_args:
-    batch_size: 128
+    batch_size: 32
     num_workers: 8
 
 trainer:
@@ -35,7 +35,7 @@ trainer:
   logger:
     class_path: WandbLogger
     init_args:
-      name: "P2-effnet-v2s"
+      name: "P2-effnet-v2s-bs32"
       project: "cosmorford"
       tags: ["phase2", "efficientnet-v2-s"]
       log_model: true

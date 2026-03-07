@@ -41,6 +41,22 @@ CHECKPOINTS_PATH = VOLUME_PATH / "checkpoints"
     secrets=[modal.Secret.from_name("wandb-secret")],
 )
 def train(config_path: str, experiment_name: Optional[str] = None):
+    _train_impl(config_path, experiment_name)
+
+
+@app.function(
+    volumes={VOLUME_PATH: volume},
+    gpu="a100",
+    timeout=86400,
+    retries=modal.Retries(initial_delay=0.0, max_retries=0),
+    single_use_containers=True,
+    secrets=[modal.Secret.from_name("wandb-secret")],
+)
+def train_a100(config_path: str, experiment_name: Optional[str] = None):
+    _train_impl(config_path, experiment_name)
+
+
+def _train_impl(config_path: str, experiment_name: Optional[str] = None):
     import subprocess
     import yaml
 
@@ -93,6 +109,24 @@ def train(config_path: str, experiment_name: Optional[str] = None):
 def main(
     config: str = "configs/default.yaml",
     name: Optional[str] = None,
+    gpu: str = "a10g",
+    parallel_configs: Optional[str] = None,
 ):
-    print(f"Starting training with config: {config}")
-    train.spawn(config, name).get()
+    if parallel_configs:
+        # Launch multiple experiments in parallel within a single app
+        # Format: "config1:name1,config2:name2,..."
+        pairs = [p.strip().split(":") for p in parallel_configs.split(",")]
+        train_fn = train_a100 if gpu == "a100" else train
+        handles = []
+        for cfg, exp_name in pairs:
+            print(f"Spawning {exp_name} with {cfg} on GPU: {gpu}")
+            handles.append(train_fn.spawn(cfg, exp_name))
+        for h in handles:
+            h.get()
+        print("All parallel experiments completed.")
+    else:
+        print(f"Starting training with config: {config} on GPU: {gpu}")
+        if gpu == "a100":
+            train_a100.spawn(config, name).get()
+        else:
+            train.spawn(config, name).get()

@@ -1,10 +1,10 @@
 model:
   class_path: cosmorford.compressor.CompressorModel
   init_args:
-    backbone: "efficientnet_b0"  # TODO: replace with Phase 2 winner
+    backbone: "resnet18"  # TODO: replace with Phase 2 winner
     bottleneck_dim: 8
     warmup_steps: 500
-    max_lr: 0.008
+    max_lr: 0.01
     decay_rate: 0.85
     dropout_rate: 0.2
     lr_schedule: "cosine"

@@ -12,7 +12,7 @@ model:
 data:
   class_path: cosmorford.dataset.WLDataModule
   init_args:
-    batch_size: 128
+    batch_size: 32
     num_workers: 8
 
 trainer:
@@ -35,7 +35,7 @@ trainer:
   logger:
     class_path: WandbLogger
     init_args:
-      name: "P2-swin-v2-t"
+      name: "P2-swin-v2-t-bs32"
       project: "cosmorford"
       tags: ["phase2", "swin-v2-t"]
       log_model: true

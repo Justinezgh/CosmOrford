@@ -1,14 +1,15 @@
+# Comparison: Power spectrum only baseline
+# MLP on 10-bin power spectrum -> 8-dim bottleneck -> Gaussian head
 model:
-  class_path: cosmorford.compressor.CompressorModel
+  class_path: cosmorford.ps_compressor.PSCompressorModel
   init_args:
-    backbone: "resnet18"  # TODO: replace with Phase 2 winner
     bottleneck_dim: 8
+    hidden_dim: 256
+    n_hidden: 3
     warmup_steps: 500
-    max_lr: 0.01
-    decay_rate: 0.85
-    dropout_rate: 0.2
+    max_lr: 0.001
     lr_schedule: "cosine"
-    random_erasing: true
+    dropout_rate: 0.1
 
 data:
   class_path: cosmorford.dataset.WLDataModule
@@ -17,7 +18,7 @@ data:
     num_workers: 8
 
 trainer:
-  max_epochs: 30
+  max_epochs: 100
   accelerator: gpu
   precision: "16-mixed"
   gradient_clip_val: 1.0
@@ -33,10 +34,15 @@ trainer:
         mode: "min"
         save_top_k: 3
         save_last: true
+    - class_path: EarlyStopping
+      init_args:
+        monitor: "val_loss"
+        patience: 15
+        mode: "min"
   logger:
     class_path: WandbLogger
     init_args:
-      name: "P3-randeras"
+      name: "C4-ps-only"
       project: "cosmorford"
-      tags: ["phase3", "random-erasing"]
+      tags: ["comparison", "power-spectrum", "mlp-only"]
       log_model: true
