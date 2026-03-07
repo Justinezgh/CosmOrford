@@ -2,6 +2,7 @@ model:
   class_path: cosmoford.models_nopatch.RegressionModelNoPatch
   init_args:
     backbone: "resnet18"
+    bottleneck_dim: 8
     pretrained: true
     warmup_steps: 500
     max_lr: 0.01

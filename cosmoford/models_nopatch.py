@@ -213,6 +213,16 @@ class RegressionModelNoPatch(L.LightningModule):
     x = self.head(summaries)
     return x[..., :2], F.softplus(x[..., 2:]) + 0.001, summaries  # mean, std, summaries
 
+  def compress(self, x):
+    """Return the compressed summary representation."""
+    if x.dim() == 3:
+      x = x.unsqueeze(1)
+    if x.size(1) == 1 and not self.hparams.pretrained:
+      x = x.repeat(1, 3, 1, 1)
+    features = self.model(x.float())
+    features = self.reshape_head(features)
+    return self.compressor(features)
+
   def load_pretrained_weights(self, checkpoint_path: str):
     """Load weights from a pretrained checkpoint.
     Only loads the model weights, not the hyperparameters or optimizer state.
