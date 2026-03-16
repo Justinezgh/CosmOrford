@@ -1,0 +1,20 @@
+#!/bin/bash
+# SLURM parameters for every job submitted
+#SBATCH --tasks=1
+#SBATCH --time=00-08:00 # time (DD-HH:MM)
+#SBATCH --account=rrg-lplevass
+#SBATCH --mem=80G
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-node=1
+#SBATCH --job-name=pretrain_gowerstreet
+#SBATCH --output=jobout/%x_%A_%a.out
+
+
+# Running the python script
+cd /home/noedia/links/projects/rrg-lplevass/noedia/wl_neurips/CosmOrford
+source .venv/bin/activate 
+wandb offline
+
+# We use dot notation to reach deep into the YAML structure
+uv run trainer fit \
+    -c configs/experiments/efficientnet_v2_s_pretrain_gowerstreet.yaml

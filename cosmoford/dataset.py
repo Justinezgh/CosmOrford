@@ -104,8 +104,8 @@ class ChallengeDataModule(L.LightningDataModule):
 
     def setup(self, stage=None):
         # Load the main dataset
-        shared_dir = "/home/noedia/links/projects/rrg-lplevass/shared/wl_chall_data/neurips-wl-challenge-flat"
-        dset = load_dataset(shared_dir)
+        shared_dir = "/home/noedia/links/projects/rrg-lplevass/shared/wl_chall_data/"
+        dset = load_dataset(shared_dir + "neurips-wl-challenge-flat")
         dset = dset.with_format("torch")
 
         # Determine which dataset to use for training
@@ -139,14 +139,14 @@ class ChallengeDataModule(L.LightningDataModule):
 
         elif self.dataset_mode == "lognormal":
             # Load lognormal pretraining dataset
-            dset_lognormal = Dataset.load_from_disk("gs://neurips-wl/datasets/lognormal")
+            dset_lognormal = Dataset.load_from_disk(shared_dir + "lognormal")
             dset_lognormal = dset_lognormal.shuffle(seed=42)
             dset_lognormal = dset_lognormal.with_format("torch")
             self.train_dataset = dset_lognormal
             self.val_dataset = dset['validation']
         elif self.dataset_mode == "ot_emulated":
             # Load lognormal pretraining dataset
-            dset_ot = Dataset.load_from_disk("gs://neurips-wl/datasets/ot_emulated")
+            dset_ot = Dataset.load_from_disk(shared_dir + "ot_emulated")
             dset_ot = dset_ot.rename_column('maps', 'kappa')
             dset_ot = dset_ot.shuffle(seed=42)
             dset_ot = dset_ot.with_format("torch")
